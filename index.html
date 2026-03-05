@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>504 Plan Decision Engine — Neurodivergent Uprising</title>
+  <meta name="description" content="Interactive 504 plan meeting prep system. Build a printable accommodation packet in 15 minutes. Built by Neurodivergent Uprising." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #FFF8F0; -webkit-font-smoothing: antialiased; }
+    input, textarea, select, button { font-family: inherit; }
+    @media print {
+      .no-print { display: none !important; }
+      body { background: #fff; }
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+const { useState, useRef } = React;
+
+// ============================================================
+// 504 PLAN DECISION ENGINE
+// Built by Neurodivergent Uprising
+// Architecture: 4-module interactive decision system
+// Legal framework: Section 504 of the Rehabilitation Act of 1973
+// ============================================================
+
+// ============================================================
+// DESIGN SYSTEM (matches NDU brand)
+// ============================================================
+const P = {
+  bg: "#FFF8F0",
+  accent: "#6B2D5B",
+  accentLight: "#8B4578",
+  gold: "#C4973B",
+  goldLight: "#E8D5A8",
+  cream: "#FFF8F0",
+  card: "#FFFFFF",
+  border: "#E8DDD0",
+  text: "#2D2A26",
+  textMid: "#5C564E",
+  textLight: "#8A8279",
+  red: "#B33A3A",
+  redBg: "#FFF0F0",
+  green: "#2D6B4F",
+  greenBg: "#F0FFF6",
+  blue: "#2D4A6B",
+  blueBg: "#F0F6FF",
+  orange: "#B36B1A",
+  orangeBg: "#FFF8F0",
+};
+const FONT = "'Source Serif 4', 'Georgia', serif";
+const FONT_SANS = "'Inter', 'Helvetica Neue', sans-serif";
+
+// ============================================================
+// 504-SPECIFIC DATA MODELS
+// ============================================================
+
+const MAJOR_LIFE_ACTIVITIES = {
+  learning: "Learning",
+  reading: "Reading",
+  concentrating: "Concentrating",
+  thinking: "Thinking",
+  communicating: "Communicating",
+  breathing: "Breathing",
+  eating: "Eating",
+  sleeping: "Sleeping",
+  walking: "Walking",
+  standing: "Standing",
+  bending: "Bending",
+  speaking: "Speaking",
+  seeing: "Seeing",
+  hearing: "Hearing",
+  selfCare: "Caring for oneself",
+  manualTasks: "Performing manual tasks",
+  majorBodily: "Major bodily functions (immune, neurological, endocrine)",
+  socialEmotional: "Social/emotional functioning",
+};
+
+const DISABILITY_CATEGORIES = [
+  "ADHD / ADD",
+  "Anxiety disorder",
+  "Depression",
+  "Autism spectrum (without IEP)",
+  "Dyslexia / reading disability",
+  "Dysgraphia / writing disability",
+  "Dyscalculia / math disability",
+  "Chronic health condition (diabetes, asthma, epilepsy, etc.)",
+  "Physical disability or mobility limitation",
+  "Vision impairment",
+  "Hearing impairment",
+  "Post-concussion / TBI recovery",
+  "OCD",
+  "PTSD / trauma-related",
+  "Sensory processing differences",
+  "Executive function challenges",
+  "Tourette syndrome / tic disorder",
+  "Other medical condition",
+];
+
+const ACCOMMODATION_CATEGORIES = {
+  ENV: {
+    label: "Environmental",
+    items: [
+      "Preferential seating",
+      "Reduced visual/auditory distractions",
+      "Access to quiet space or sensory break area",
+      "Permission to use noise-canceling headphones",
+      "Flexible seating (standing desk, wobble chair, etc.)",
+      "Separate testing location",
+      "Modified lighting",
+      "Access to elevator or ground-floor classes",
+    ],
+  },
+  TIME: {
+    label: "Timing & Scheduling",
+    items: [
+      "Extended time on tests (1.5x or 2x)",
+      "Extended time on assignments",
+      "Flexible deadlines with pre-arranged plan",
+      "Breaks during tests (timed or as-needed)",
+      "Breaks during class (movement or sensory)",
+      "Modified schedule or late arrival",
+      "Reduced homework load (quality over quantity)",
+      "Chunked assignments with check-ins",
+    ],
+  },
+  INST: {
+    label: "Instructional",
+    items: [
+      "Printed copies of notes or slides",
+      "Audio recording of lectures permitted",
+      "Instructions repeated or clarified individually",
+      "Multi-modal instruction (visual + verbal + written)",
+      "Check for understanding before independent work",
+      "Graphic organizers provided",
+      "Advance notice of assignments and tests",
+      "Simplified or clarified written directions",
+    ],
+  },
+  ASSESS: {
+    label: "Assessment",
+    items: [
+      "Oral testing option",
+      "Alternative test formats (multiple choice vs. essay)",
+      "Word bank provided",
+      "Calculator permitted",
+      "Speech-to-text or dictation allowed",
+      "Read-aloud or audio version of tests",
+      "Grade based on content knowledge, not spelling/handwriting",
+      "Retake or test correction opportunities",
+    ],
+  },
+  SOCIAL: {
+    label: "Social / Emotional / Behavioral",
+    items: [
+      "Access to school counselor as needed",
+      "Pre-arranged signal to leave class",
+      "Daily or weekly check-in with trusted adult",
+      "Modified participation expectations (e.g., written vs. oral)",
+      "Anti-bullying protections documented",
+      "Transition support between classes or activities",
+      "Behavior addressed as disability-related, not punitive",
+      "Social skills support or structured peer interaction",
+    ],
+  },
+  MED: {
+    label: "Medical / Health",
+    items: [
+      "Permission to carry and self-administer medication",
+      "Access to nurse as needed",
+      "Snack/water allowed during class",
+      "Bathroom access without restriction",
+      "Modified PE participation",
+      "Emergency health plan on file",
+      "Excused absences with make-up plan",
+      "Rest breaks for fatigue or pain",
+    ],
+  },
+  TECH: {
+    label: "Technology",
+    items: [
+      "Use of laptop/tablet for written work",
+      "Access to text-to-speech software",
+      "Access to speech-to-text software",
+      "Use of calculator or math apps",
+      "Audio books or digital text versions",
+      "Assistive technology evaluation requested",
+      "Permission to use personal device",
+      "Access to organizational apps or tools",
+    ],
+  },
+};
+
+const DISABILITY_ACTIVITY_MAP = {
+  "ADHD / ADD": ["concentrating", "learning", "thinking", "socialEmotional"],
+  "Anxiety disorder": ["concentrating", "learning", "socialEmotional", "sleeping", "breathing"],
+  "Depression": ["concentrating", "learning", "socialEmotional", "sleeping", "selfCare", "thinking"],
+  "Autism spectrum (without IEP)": ["communicating", "socialEmotional", "learning", "concentrating"],
+  "Dyslexia / reading disability": ["reading", "learning"],
+  "Dysgraphia / writing disability": ["learning", "manualTasks"],
+  "Dyscalculia / math disability": ["learning", "thinking"],
+  "Chronic health condition (diabetes, asthma, epilepsy, etc.)": ["majorBodily", "breathing", "concentrating", "learning"],
+  "Physical disability or mobility limitation": ["walking", "standing", "bending", "manualTasks"],
+  "Vision impairment": ["seeing", "reading", "learning"],
+  "Hearing impairment": ["hearing", "communicating", "learning"],
+  "Post-concussion / TBI recovery": ["concentrating", "thinking", "learning", "sleeping", "seeing"],
+  "OCD": ["concentrating", "thinking", "socialEmotional", "selfCare"],
+  "PTSD / trauma-related": ["concentrating", "socialEmotional", "sleeping", "learning", "thinking"],
+  "Sensory processing differences": ["concentrating", "learning", "socialEmotional", "eating"],
+  "Executive function challenges": ["concentrating", "thinking", "learning", "selfCare"],
+  "Tourette syndrome / tic disorder": ["concentrating", "socialEmotional", "communicating"],
+  "Other medical condition": ["majorBodily", "learning"],
+};
+
+const DISABILITY_ACCOMMODATION_MAP = {
+  "ADHD / ADD": ["ENV", "TIME", "INST", "SOCIAL", "TECH"],
+  "Anxiety disorder": ["ENV", "TIME", "SOCIAL", "ASSESS"],
+  "Depression": ["TIME", "SOCIAL", "ASSESS", "INST"],
+  "Autism spectrum (without IEP)": ["ENV", "SOCIAL", "INST", "TIME", "ASSESS"],
+  "Dyslexia / reading disability": ["INST", "ASSESS", "TECH", "TIME"],
+  "Dysgraphia / writing disability": ["TECH", "ASSESS", "TIME", "INST"],
+  "Dyscalculia / math disability": ["ASSESS", "INST", "TECH", "TIME"],
+  "Chronic health condition (diabetes, asthma, epilepsy, etc.)": ["MED", "TIME", "ENV"],
+  "Physical disability or mobility limitation": ["ENV", "TIME", "TECH", "MED"],
+  "Vision impairment": ["TECH", "ENV", "INST", "ASSESS"],
+  "Hearing impairment": ["TECH", "ENV", "INST", "ASSESS"],
+  "Post-concussion / TBI recovery": ["ENV", "TIME", "MED", "INST", "ASSESS"],
+  "OCD": ["TIME", "SOCIAL", "ENV", "ASSESS"],
+  "PTSD / trauma-related": ["SOCIAL", "ENV", "TIME", "ASSESS"],
+  "Sensory processing differences": ["ENV", "SOCIAL", "TIME", "INST"],
+  "Executive function challenges": ["INST", "TIME", "TECH", "SOCIAL"],
+  "Tourette syndrome / tic disorder": ["ENV", "SOCIAL", "ASSESS", "TIME"],
+  "Other medical condition": ["MED", "TIME", "ENV"],
+};
+
+const RED_FLAG_RULES_504 = [
+  {
+    id: "no_written_plan",
+    check: (d) => d.hasWrittenPlan === false,
+    text: "School does not have a written 504 plan. While not technically required everywhere, a written plan is essential for enforcement. Request one immediately.",
+    severity: "High",
+  },
+  {
+    id: "no_parent_meeting",
+    check: (d) => d.parentInvitedToMeeting === false,
+    text: "Parent was not invited to or included in the 504 meeting. While Section 504 doesn't require parent participation the same way IDEA does, best practice and many district policies include parents. Your input matters.",
+    severity: "High",
+  },
+  {
+    id: "no_evaluation",
+    check: (d) => d.evaluationConducted === false,
+    text: "No evaluation was conducted before developing the 504 plan. Section 504 requires schools to evaluate before placement decisions.",
+    severity: "High",
+  },
+  {
+    id: "verbal_only",
+    check: (d) => d.accommodationsVerbalOnly === true,
+    text: "Accommodations were communicated verbally but not documented. Verbal agreements are unenforceable. Insist on written documentation.",
+    severity: "High",
+  },
+  {
+    id: "teachers_unaware",
+    check: (d) => d.teachersAwareOfPlan === false,
+    text: "Not all teachers are aware of or implementing the 504 plan. The school has a legal obligation to inform every teacher who interacts with your child.",
+    severity: "High",
+  },
+  {
+    id: "no_review",
+    check: (d) => d.lastReviewOver12Months === true,
+    text: "504 plan has not been reviewed in over 12 months. While the law says 'periodic' review, best practice is annual. Request a review meeting.",
+    severity: "Moderate",
+  },
+  {
+    id: "iep_denied_no_504",
+    check: (d) => d.iepDeniedNotOffered504 === true,
+    text: "Child was denied an IEP but not considered for a 504 plan. Schools should automatically evaluate for Section 504 when a student is found ineligible for IDEA services.",
+    severity: "High",
+  },
+  {
+    id: "discipline_no_mdr",
+    check: (d) => d.disciplinedWithout504Review === true,
+    text: "Child was disciplined (suspension, expulsion, or pattern of removals) without a manifestation determination. Section 504 requires this review before significant changes in placement.",
+    severity: "High",
+  },
+  {
+    id: "accommodations_not_followed",
+    check: (d) => d.accommodationsNotFollowed === true,
+    text: "Documented accommodations are not being consistently implemented. This is a Section 504 violation. Document specific instances and report to the 504 coordinator.",
+    severity: "High",
+  },
+  {
+    id: "informal_only",
+    check: (d) => d.onlyInformalSupports === true,
+    text: "School is providing only informal supports instead of a formal 504 plan. Informal supports can be removed at any time and have no legal protections.",
+    severity: "Moderate",
+  },
+];
+
+const GLOSSARY_504 = [
+  { term: "Section 504", def: "A federal civil rights law (Section 504 of the Rehabilitation Act of 1973) that prohibits disability discrimination in programs receiving federal funds, including public schools." },
+  { term: "504 Plan", def: "A plan that documents the accommodations and supports a student with a disability needs to access education on equal terms with peers." },
+  { term: "FAPE (504)", def: "Free Appropriate Public Education under Section 504 \u2014 means providing regular or special education and related aids/services designed to meet the student\u2019s individual needs as adequately as non-disabled peers\u2019 needs are met." },
+  { term: "Major Life Activity", def: "Activities that are central to daily life, including learning, reading, concentrating, thinking, communicating, breathing, eating, sleeping, walking, standing, and major bodily functions." },
+  { term: "Substantially Limits", def: "The standard for 504 eligibility. A disability must substantially limit one or more major life activities. After the ADA Amendments Act of 2008, this is interpreted broadly." },
+  { term: "Accommodation", def: "A change in how a student accesses learning \u2014 such as extra time, preferential seating, or technology \u2014 without changing what they are expected to learn." },
+  { term: "Modification", def: "A change in what a student is expected to learn or demonstrate. Modifications are less common in 504 plans (more typical of IEPs)." },
+  { term: "504 Coordinator", def: "The school or district staff member responsible for overseeing Section 504 compliance, including evaluations, plan development, and grievance procedures." },
+  { term: "OCR Complaint", def: "A formal complaint filed with the U.S. Department of Education\u2019s Office for Civil Rights when a school violates Section 504 or Title II of the ADA." },
+  { term: "Manifestation Determination", def: "A review to determine whether a student\u2019s behavior is related to their disability. Required under Section 504 before any significant change in placement, including suspensions over 10 days." },
+  { term: "Change in Placement", def: "A significant change in the educational setting or services \u2014 including expulsion, consecutive suspensions totaling over 10 days, or transfer to a different program." },
+  { term: "Evaluation (504)", def: "The process of gathering information from multiple sources (medical records, teacher input, grades, assessments) to determine if a student qualifies for Section 504 protections." },
+  { term: "Procedural Safeguards", def: "Rights that protect families during the 504 process, including notice of actions, right to examine records, right to an impartial hearing, and right to file an OCR complaint." },
+  { term: "Impartial Hearing", def: "A formal due process procedure available under Section 504 where a neutral hearing officer resolves disputes between families and the school district." },
+  { term: "IDEA", def: "Individuals with Disabilities Education Act \u2014 the federal special education law that governs IEPs. Different from Section 504 in scope, eligibility, and requirements." },
+  { term: "IEP", def: "Individualized Education Program \u2014 a more comprehensive plan under IDEA that includes goals, specialized instruction, and related services. If a student qualifies for an IEP, they also qualify for 504 protections." },
+  { term: "ADA Title II", def: "Title II of the Americans with Disabilities Act, which works alongside Section 504 to protect students with disabilities in public schools from discrimination." },
+];
+
+const MEETING_TYPES_504 = [
+  "Initial 504 evaluation meeting",
+  "504 plan development meeting",
+  "Annual 504 review",
+  "504 re-evaluation",
+  "504 plan amendment",
+  "Manifestation determination review",
+  "Transition meeting (new school or grade)",
+  "Meeting to request a 504 plan",
+  "Dispute resolution or grievance meeting",
+];
+
+const DISPUTE_CATEGORIES_504 = [
+  { id: "denied_eval", label: "School refused to evaluate for a 504 plan", leverage: "Section 504 requires evaluation when there is reason to believe a student has a disability. Request in writing and cite 34 CFR \u00A7104.35." },
+  { id: "denied_eligibility", label: "School found child ineligible despite documented disability", leverage: "Section 504 uses a broad definition of disability. If your child has a physical or mental impairment that substantially limits a major life activity, they qualify. The ADA Amendments Act of 2008 lowered the bar significantly." },
+  { id: "inadequate_accommodations", label: "Accommodations don't match the child's actual needs", leverage: "The 504 plan must be individualized. Generic accommodations not tied to the student's specific disability impact are insufficient." },
+  { id: "not_implemented", label: "Teachers are not following the 504 plan", leverage: "Non-implementation is a Section 504 violation. Document specific incidents, report to the 504 coordinator, and escalate to the district if needed." },
+  { id: "discipline_violation", label: "Child was disciplined without considering disability", leverage: "Section 504 requires a manifestation determination before significant discipline. If behavior is disability-related, the school must address the underlying need, not just punish." },
+  { id: "no_written_plan", label: "School refuses to put the 504 plan in writing", leverage: "While Section 504 doesn't explicitly require a written document, OCR has stated that a written plan is best practice and districts can be found in violation without one." },
+  { id: "retaliation", label: "School retaliated after parent advocacy", leverage: "Retaliation against a parent or student for exercising Section 504 rights is itself a violation. Document everything and file an OCR complaint if needed." },
+  { id: "transition_failure", label: "504 plan was dropped during school transition", leverage: "The receiving school must implement the existing 504 plan or convene a meeting to develop a new one. The student cannot go without protections during transitions." },
+  { id: "iep_to_504_loss", label: "Lost services when moved from IEP to 504", leverage: "If a student was exited from special education, the school should automatically consider Section 504 eligibility. Critical services shouldn't disappear." },
+  { id: "access_denied", label: "Child denied access to programs, activities, or field trips", leverage: "Section 504 prohibits exclusion from any school program or activity based on disability. The school must provide accommodations to enable participation." },
+];
+
+const TONE_OPTIONS = [
+  { id: "collaborative", label: "Collaborative \u2014 firm but partnership-focused", desc: "Best for first meetings or good school relationships" },
+  { id: "structured", label: "Structured \u2014 data-driven and procedural", desc: "Best when you need to establish a paper trail" },
+  { id: "assertive", label: "Assertive \u2014 rights-forward and direct", desc: "Best when accommodations are being denied or ignored" },
+];
+
+// ============================================================
+// COMPUTE FUNCTIONS
+// ============================================================
+
+function computeModule1(data) {
+  const activityScores = {};
+  Object.keys(MAJOR_LIFE_ACTIVITIES).forEach((k) => (activityScores[k] = 0));
+  data.disabilities.forEach((dx) => {
+    const mapped = DISABILITY_ACTIVITY_MAP[dx];
+    if (mapped) mapped.forEach((act) => (activityScores[act] = (activityScores[act] || 0) + 1));
+  });
+  data.manualActivities.forEach((act) => {
+    activityScores[act] = (activityScores[act] || 0) + 2;
+  });
+  const rankedActivities = Object.entries(activityScores)
+    .filter(([, v]) => v > 0)
+    .sort((a, b) => b[1] - a[1])
+    .map(([code, score]) => ({ code, label: MAJOR_LIFE_ACTIVITIES[code], score }));
+  const accCatScores = {};
+  data.disabilities.forEach((dx) => {
+    const cats = DISABILITY_ACCOMMODATION_MAP[dx];
+    if (cats) cats.forEach((cat, i) => {
+      accCatScores[cat] = (accCatScores[cat] || 0) + (cats.length - i);
+    });
+  });
+  const rankedAccCategories = Object.entries(accCatScores)
+    .sort((a, b) => b[1] - a[1])
+    .map(([code, score]) => ({ code, label: ACCOMMODATION_CATEGORIES[code].label, score }));
+  const redFlags = RED_FLAG_RULES_504.filter((r) => r.check(data));
+  return { rankedActivities, rankedAccCategories, redFlags };
+}
+
+function computeModule2(mod1Data, accData) {
+  const gaps = [];
+  const strengths = [];
+  const selectedAccs = accData.selectedAccommodations || [];
+  mod1Data.rankedAccCategories.slice(0, 3).forEach((cat) => {
+    const catItems = ACCOMMODATION_CATEGORIES[cat.code]?.items || [];
+    const hasAny = catItems.some((item) => selectedAccs.includes(item));
+    if (!hasAny) {
+      gaps.push({ type: "missing_category", text: "No " + cat.label.toLowerCase() + " accommodations selected, but your child's disability profile suggests they may be needed.", severity: "Moderate" });
+    } else {
+      strengths.push(cat.label + " accommodations are addressed.");
+    }
+  });
+  if (accData.hasExistingPlan && !selectedAccs.some((a) => a.includes("Extended time"))) {
+    const needsTime = mod1Data.rankedActivities.some((a) => ["concentrating", "thinking", "reading"].includes(a.code));
+    if (needsTime) {
+      gaps.push({ type: "timing_gap", text: "No extended time accommodations despite concentration/processing impact. This is one of the most commonly needed and effective accommodations.", severity: "High" });
+    }
+  }
+  if (!selectedAccs.some((a) => a.toLowerCase().includes("break"))) {
+    const needsBreaks = mod1Data.rankedActivities.some((a) => ["concentrating", "socialEmotional", "breathing"].includes(a.code));
+    if (needsBreaks) {
+      gaps.push({ type: "break_gap", text: "No break accommodations despite emotional/concentration impact. Scheduled or as-needed breaks are critical for regulation.", severity: "Moderate" });
+    }
+  }
+  if (accData.teachersNotified === false) {
+    gaps.push({ type: "notification_gap", text: "All teachers who interact with your child must be informed of the 504 plan. Undisclosed plans cannot be implemented.", severity: "High" });
+  }
+  if (accData.implementationTracking === false) {
+    gaps.push({ type: "tracking_gap", text: "No system to track whether accommodations are being consistently implemented. Without tracking, compliance is invisible.", severity: "Moderate" });
+  }
+  const overallRisk = gaps.filter((g) => g.severity === "High").length >= 2 ? "High" : gaps.length > 0 ? "Moderate" : "Low";
+  return { gaps, strengths, overallRisk };
+}
+
+function generateScripts(data, mod1Result, mod2Result, disputes, tone) {
+  const childName = data.childName || "my child";
+  const scripts = [];
+  var opening = "";
+  if (tone === "collaborative") {
+    opening = "Thank you for meeting with me today about " + childName + "'s 504 plan. I appreciate the school's commitment to supporting students with disabilities, and I want to work together to make sure " + childName + "'s accommodations are effective and consistently implemented. I've prepared some specific points I'd like to discuss.";
+  } else if (tone === "structured") {
+    opening = "Thank you for this meeting regarding " + childName + "'s Section 504 plan. I'd like to work through a structured agenda today. I have documentation of " + childName + "'s disability impact, specific accommodation needs, and some areas where I believe the current plan needs adjustment. I'll be taking notes for my records.";
+  } else {
+    opening = "Thank you for meeting today. I want to be direct: " + childName + " has a documented disability that substantially limits major life activities, and Section 504 of the Rehabilitation Act requires this school to provide accommodations that ensure equal access to education. I have specific concerns I need addressed today, and I'll be following up in writing.";
+  }
+  scripts.push({ label: "Opening Statement", text: opening });
+
+  disputes.forEach(function(disputeId) {
+    const dispute = DISPUTE_CATEGORIES_504.find((d) => d.id === disputeId);
+    if (!dispute) return;
+    var script = "";
+    if (tone === "collaborative") {
+      script = "I'd like to discuss an area where I think we can improve " + childName + "'s support. " + dispute.label + ". I understand the school has limited resources, but " + dispute.leverage + " Can we work together on a solution?";
+    } else if (tone === "structured") {
+      script = "The next item on my agenda: " + dispute.label + ". For the record, " + dispute.leverage + " I'd like to document what specific steps will be taken and by when.";
+    } else {
+      script = "I need to address a serious concern: " + dispute.label + ". Under federal law, " + dispute.leverage + " I'm requesting a written response to this concern within 10 business days.";
+    }
+    scripts.push({ label: dispute.label, text: script });
+  });
+
+  if (mod2Result && mod2Result.gaps.length > 0) {
+    const gapSummary = mod2Result.gaps.slice(0, 3).map((g) => g.text).join(" Additionally, ");
+    var accScript = "";
+    if (tone === "collaborative") {
+      accScript = "I've identified some gaps in " + childName + "'s current accommodations that I'd like us to address together. " + gapSummary + " What options can we explore?";
+    } else if (tone === "structured") {
+      accScript = "Based on my review, the following accommodation gaps need to be addressed: " + gapSummary + " I'd like each of these documented with a timeline for implementation.";
+    } else {
+      accScript = childName + "'s 504 plan has significant gaps that must be addressed: " + gapSummary + " Under Section 504, the plan must be individualized to meet " + childName + "'s specific needs. I'm requesting these additions be made today.";
+    }
+    scripts.push({ label: "Accommodation Gaps", text: accScript });
+  }
+
+  var closing = "";
+  if (tone === "collaborative") {
+    closing = "I appreciate your time today and your willingness to work on these adjustments. I'll follow up with an email summarizing what we discussed and the next steps we agreed on. I'd like to schedule a check-in in 30\u201360 days to see how the changes are working for " + childName + ".";
+  } else if (tone === "structured") {
+    closing = "To summarize today's meeting: I'll be sending a follow-up email within 48 hours documenting each decision, responsible party, and timeline. I'm requesting a copy of the updated 504 plan within 10 school days, and I'd like our next review meeting scheduled before the end of this quarter.";
+  } else {
+    closing = "I expect the items discussed today to be reflected in an updated written 504 plan within 10 school days. I will be sending a follow-up email documenting everything discussed, and I reserve all rights under Section 504 and Title II of the ADA, including the right to file a complaint with the Office for Civil Rights if these concerns are not addressed.";
+  }
+  scripts.push({ label: "Closing Statement", text: closing });
+
+  var emailLines = [];
+  emailLines.push("Subject: Follow-Up \u2014 " + childName + "'s 504 Plan Meeting on [DATE]");
+  emailLines.push("");
+  emailLines.push("Dear [504 Coordinator / Team],");
+  emailLines.push("");
+  emailLines.push("Thank you for meeting with me on [DATE] to discuss " + childName + "'s Section 504 plan. I want to document the key points from our conversation to ensure we're aligned:");
+  emailLines.push("");
+  emailLines.push("ITEMS DISCUSSED:");
+  disputes.forEach(function(dId) {
+    const d = DISPUTE_CATEGORIES_504.find((x) => x.id === dId);
+    if (d) emailLines.push("\u2022 " + d.label + " \u2014 [SUMMARIZE WHAT WAS DECIDED]");
+  });
+  if (mod2Result && mod2Result.gaps.length > 0) {
+    emailLines.push("\u2022 Accommodation gaps identified \u2014 [SUMMARIZE CHANGES AGREED TO]");
+  }
+  emailLines.push("");
+  emailLines.push("NEXT STEPS:");
+  emailLines.push("\u2022 Updated written 504 plan to be provided by: [DATE]");
+  emailLines.push("\u2022 Next review meeting scheduled for: [DATE]");
+  emailLines.push("\u2022 [ANY OTHER ACTION ITEMS]");
+  emailLines.push("");
+  emailLines.push("Please confirm receipt of this email and let me know if I've captured anything incorrectly.");
+  emailLines.push("");
+  emailLines.push("Thank you for your partnership in supporting " + childName + ".");
+  emailLines.push("");
+  emailLines.push("[YOUR NAME]");
+  emailLines.push("[DATE]");
+
+  scripts.push({ label: "Follow-Up Email Template", text: emailLines.join("\n") });
+  return scripts;
+}
+
+// ============================================================
+// UI COMPONENTS
+// ============================================================
+
+function GlossaryPanel({ open, onClose }) {
+  if (!open) return null;
+  return (
+    <div style={{ position: "fixed", top: 0, right: 0, bottom: 0, width: "min(400px, 90vw)", background: "#fff", zIndex: 1000, boxShadow: "-4px 0 24px rgba(0,0,0,0.15)", overflowY: "auto", fontFamily: FONT_SANS }}>
+      <div style={{ padding: "20px 24px", borderBottom: "1px solid " + P.border, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h3 style={{ margin: 0, fontSize: "16px", fontFamily: FONT, color: P.accent }}>504 Glossary</h3>
+        <button onClick={onClose} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: P.textMid }}>{"\u2715"}</button>
+      </div>
+      <div style={{ padding: "16px 24px" }}>
+        {GLOSSARY_504.map((g, i) => (
+          <div key={i} style={{ marginBottom: "16px", paddingBottom: "16px", borderBottom: i < GLOSSARY_504.length - 1 ? "1px solid " + P.border : "none" }}>
+            <div style={{ fontWeight: 600, fontSize: "13px", color: P.accent, marginBottom: "4px" }}>{g.term}</div>
+            <div style={{ fontSize: "13px", color: P.textMid, lineHeight: 1.5 }}>{g.def}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Card({ children, style }) {
+  return (
+    <div style={Object.assign({ background: P.card, borderRadius: "12px", border: "1px solid " + P.border, padding: "20px", marginBottom: "16px" }, style || {})}>
+      {children}
+    </div>
+  );
+}
+
+function Chip({ label, selected, onClick }) {
+  return (
+    <button onClick={onClick} style={{
+      display: "inline-block", padding: "8px 14px", borderRadius: "20px", fontSize: "13px", fontFamily: FONT_SANS,
+      border: "1.5px solid " + (selected ? P.accent : P.border),
+      background: selected ? P.accent : "#fff",
+      color: selected ? "#fff" : P.text,
+      cursor: "pointer", margin: "0 8px 8px 0", transition: "all 0.2s",
+    }}>
+      {label}
+    </button>
+  );
+}
+
+function SeverityBadge({ level }) {
+  const colors = { High: { bg: P.redBg, text: P.red }, Moderate: { bg: P.orangeBg, text: P.orange }, Low: { bg: P.greenBg, text: P.green } };
+  const c = colors[level] || colors.Moderate;
+  return (
+    <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: "12px", fontSize: "11px", fontWeight: 600, fontFamily: FONT_SANS, background: c.bg, color: c.text, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+      {level}
+    </span>
+  );
+}
+
+function ProgressBar({ step, total }) {
+  return (
+    <div style={{ display: "flex", gap: "4px", margin: "0 0 24px" }}>
+      {Array.from({ length: total }, function(_, i) {
+        return <div key={i} style={{ flex: 1, height: "4px", borderRadius: "2px", background: i <= step ? P.accent : P.border, transition: "background 0.3s" }} />;
+      })}
+    </div>
+  );
+}
+
+function StepLabel({ number, title, time }) {
+  return (
+    <div style={{ marginBottom: "20px" }}>
+      <div style={{ fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", color: P.textLight, fontFamily: FONT_SANS, marginBottom: "4px" }}>
+        Step {number} {time && ("\u00B7 " + time)}
+      </div>
+      <h2 style={{ fontSize: "22px", fontWeight: 700, color: P.text, fontFamily: FONT, margin: 0, lineHeight: 1.3 }}>{title}</h2>
+    </div>
+  );
+}
+
+function InfoBox({ type, children }) {
+  const styles = {
+    warning: { bg: P.redBg, border: P.red, icon: "\u26A0" },
+    info: { bg: P.blueBg, border: P.blue, icon: "\u2139" },
+    success: { bg: P.greenBg, border: P.green, icon: "\u2713" },
+    tip: { bg: P.orangeBg, border: P.orange, icon: "\uD83D\uDCA1" },
+  };
+  const s = styles[type] || styles.info;
+  return (
+    <div style={{ background: s.bg, borderLeft: "3px solid " + s.border, padding: "14px 16px", borderRadius: "0 8px 8px 0", marginBottom: "16px", fontSize: "13px", fontFamily: FONT_SANS, lineHeight: 1.6, color: P.text }}>
+      <span style={{ marginRight: "8px" }}>{s.icon}</span>
+      {children}
+    </div>
+  );
+}
+
+// ============================================================
+// MAIN APP
+// ============================================================
+function App() {
+  const [step, setStep] = useState(0);
+  const [glossaryOpen, setGlossaryOpen] = useState(false);
+  const [d1, setD1] = useState({
+    childName: "", age: "", grade: "", state: "", meetingType: "", meetingDate: "",
+    disabilities: [], manualActivities: [], currentServices: "",
+    concern1: "", concern2: "", concern3: "",
+    hasWrittenPlan: null, parentInvitedToMeeting: null, evaluationConducted: null,
+    accommodationsVerbalOnly: false, teachersAwareOfPlan: null,
+    lastReviewOver12Months: false, iepDeniedNotOffered504: false,
+    disciplinedWithout504Review: false, accommodationsNotFollowed: false,
+    onlyInformalSupports: false,
+  });
+  const [r1, setR1] = useState(null);
+  const [d2, setD2] = useState({
+    selectedAccommodations: [], hasExistingPlan: false,
+    teachersNotified: null, implementationTracking: null,
+    currentAccommodationsWorking: "", additionalNotes: "",
+  });
+  const [r2, setR2] = useState(null);
+  const [d3, setD3] = useState({ disputes: [], tone: "collaborative", additionalContext: "" });
+  const [r3, setR3] = useState(null);
+  const [packetEdits, setPacketEdits] = useState({ opening: "", scripts: "", email: "" });
+  const [packetInit, setPacketInit] = useState(false);
+  const [emailGate, setEmailGate] = useState({ email: "", firstName: "", submitting: false, error: "", done: false });
+
+  const u1 = (f, v) => setD1((p) => Object.assign({}, p, { [f]: v }));
+  const u2 = (f, v) => setD2((p) => Object.assign({}, p, { [f]: v }));
+  const u3 = (f, v) => setD3((p) => Object.assign({}, p, { [f]: v }));
+  const go = (s) => { setStep(s); window.scrollTo({ top: 0, behavior: "smooth" }); };
+
+  const can1 = d1.childName && d1.disabilities.length > 0 && d1.concern1;
+  const can2 = d2.selectedAccommodations.length > 0;
+  const can3 = d3.disputes.length > 0;
+
+  const printRef = useRef();
+
+  const toggleDisability = (dx) => {
+    setD1((p) => ({ ...p, disabilities: p.disabilities.includes(dx) ? p.disabilities.filter((d) => d !== dx) : [...p.disabilities, dx] }));
+  };
+  const toggleActivity = (act) => {
+    setD1((p) => ({ ...p, manualActivities: p.manualActivities.includes(act) ? p.manualActivities.filter((a) => a !== act) : [...p.manualActivities, act] }));
+  };
+  const toggleAccommodation = (acc) => {
+    setD2((p) => ({ ...p, selectedAccommodations: p.selectedAccommodations.includes(acc) ? p.selectedAccommodations.filter((a) => a !== acc) : [...p.selectedAccommodations, acc] }));
+  };
+  const toggleDispute = (dId) => {
+    setD3((p) => ({ ...p, disputes: p.disputes.includes(dId) ? p.disputes.filter((d) => d !== dId) : [...p.disputes, dId] }));
+  };
+
+  // ---- STEP 0: WELCOME ----
+  if (step === 0) return (
+    <div style={{ minHeight: "100vh", background: P.bg, fontFamily: FONT }}>
+      <GlossaryPanel open={glossaryOpen} onClose={() => setGlossaryOpen(false)} />
+      <div style={{ background: P.accent, padding: "40px 24px 32px", textAlign: "center" }}>
+        <div style={{ fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", color: "rgba(255,255,255,0.4)", marginBottom: "12px" }}>Neurodivergent Uprising</div>
+        <h1 style={{ fontSize: "28px", fontWeight: 700, color: "#fff", margin: "0 0 8px", fontFamily: FONT, lineHeight: 1.2 }}>504 Plan Decision Engine</h1>
+        <p style={{ fontSize: "15px", color: "rgba(255,255,255,0.7)", margin: 0, lineHeight: 1.5, fontFamily: FONT }}>Your accommodation prep system.</p>
+      </div>
+      <div style={{ maxWidth: "600px", margin: "0 auto", padding: "24px 20px" }}>
+        <Card>
+          <p style={{ fontSize: "15px", lineHeight: 1.7, color: P.text, fontFamily: FONT, margin: "0 0 16px" }}>
+            Built for the version of you that's been told "we don't do that here" or "they don't qualify" &mdash; when you know something isn't right.
+          </p>
+          <p style={{ fontSize: "14px", lineHeight: 1.7, color: P.textMid, fontFamily: FONT_SANS, margin: "0 0 16px" }}>
+            This tool walks you through four steps and builds a printable meeting prep packet for any 504 plan meeting. It takes about 15 minutes. No expertise required. Just answer honestly.
+          </p>
+          <div style={{ background: P.blueBg, borderRadius: "8px", padding: "16px", marginBottom: "16px" }}>
+            <div style={{ fontSize: "13px", fontFamily: FONT_SANS, color: P.blue, lineHeight: 1.6 }}>
+              <strong>Step 1:</strong> Child Snapshot &mdash; tell the engine about your child and their disability.<br/>
+              <strong>Step 2:</strong> Accommodation Builder &mdash; select and stress-test accommodations.<br/>
+              <strong>Step 3:</strong> Rights & Strategy &mdash; choose your disputes and tone.<br/>
+              <strong>Step 4:</strong> Meeting Packet &mdash; everything compiles into a printable document.
+            </div>
+          </div>
+          <InfoBox type="tip">
+            <strong>504 vs. IEP:</strong> A 504 plan provides accommodations under civil rights law. An IEP provides specialized instruction under IDEA. If your child needs a different way to <em>access</em> learning, a 504 plan may be what they need. If they need a different way to <em>learn</em>, they may need an IEP.
+          </InfoBox>
+        </Card>
+        <button onClick={() => go(1)} style={{ width: "100%", padding: "16px", background: P.accent, color: "#fff", border: "none", borderRadius: "10px", fontSize: "16px", fontWeight: 600, fontFamily: FONT, cursor: "pointer" }}>
+          Start Your 504 Plan Prep &rarr;
+        </button>
+        <div style={{ textAlign: "center", marginTop: "16px" }}>
+          <button onClick={() => setGlossaryOpen(true)} style={{ background: "none", border: "none", color: P.textLight, fontSize: "13px", fontFamily: FONT_SANS, cursor: "pointer", textDecoration: "underline" }}>
+            Open 504 Glossary
+          </button>
+        </div>
+        <div style={{ marginTop: "32px", padding: "16px", textAlign: "center", fontSize: "11px", color: P.textLight, fontFamily: FONT_SANS, lineHeight: 1.5 }}>
+          This tool provides educational guidance based on Section 504 of the Rehabilitation Act. It is not legal advice. For legal questions, consult a special education attorney or your state's Parent Training and Information Center (PTI).
+        </div>
+      </div>
+    </div>
+  );
+
+  // ---- STEP 1: CHILD SNAPSHOT ----
+  if (step === 1) return (
+    <div style={{ minHeight: "100vh", background: P.bg, fontFamily: FONT }}>
+      <GlossaryPanel open={glossaryOpen} onClose={() => setGlossaryOpen(false)} />
+      <div style={{ background: P.accent, padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }} className="no-print">
+        <span style={{ color: "#fff", fontSize: "15px", fontWeight: 600 }}>504 Decision Engine</span>
+        <button onClick={() => setGlossaryOpen(true)} style={{ background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", cursor: "pointer", fontFamily: FONT_SANS }}>Glossary</button>
+      </div>
+      <div style={{ maxWidth: "600px", margin: "0 auto", padding: "24px 20px" }}>
+        <ProgressBar step={0} total={4} />
+        <StepLabel number={1} title="Child Snapshot" time="3\u20135 min" />
+        <Card>
+          <label style={{ fontSize: "13px", fontWeight: 600, fontFamily: FONT_SANS, color: P.text, display: "block", marginBottom: "6px" }}>Child's First Name *</label>
+          <input value={d1.childName} onChange={(e) => u1("childName", e.target.value)} placeholder="First name only" style={{ width: "100%", padding: "10px 12px", border: "1px solid " + P.border, borderRadius: "8px", fontSize: "14px", fontFamily: FONT_SANS, boxSizing: "border-box" }} />
+        </Card>
+        <Card>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+            <div>
+              <label style={{ fontSize: "13px", fontWeight: 600, fontFamily: FONT_SANS, color: P.text, display: "block", marginBottom: "6px" }}>Age</label>
+              <input value={d1.age} onChange={(e) => u1("age", e.target.value)} placeholder="e.g., 10" style={{ width: "100%", padding: "10px 12px", border: "1px solid " + P.border, borderRadius: "8px", fontSize: "14px", fontFamily: FONT_SANS, boxSizing: "border-box" }} />
+            </div>
+            <div>
+              <label style={{ fontSize: "13px", fontWeight: 600, fontFamily: FONT_SANS, color: P.text, display: "block", marginBottom: "6px" }}>Grade</label>
+              <input value={d1.grade} onChange={(e) => u1("grade", e.target.value)} placeholder="e.g., 5th" style={{ width: "100%", padding: "10px 12px", border: "1px solid " + P.border, borderRadius: "8px", fontSize: "14px", fontFamily: FONT_SANS, boxSizing: "border-box" }} />
+            </div>
+          </div>
+        </Card>
+        <Card>
+          <label style={{ fontSize: "13px", fontWeight: 600, fontFamily: FONT_SANS, color: P.text, display: "block", marginBottom: "6px" }}>Meeting Type</label>
+          <select value={d1.meetingType} onChange={(e) => u1("meetingType", e.target.value)} style={{ width: "100%", padding: "10px 12px", border: "1px solid " + P.border, borderRadius: "8px", fontSize: "14px", fontFamily: FONT_SANS, background: "#fff", boxSizing: "border-box" }}>
+            <option value="">Select meeting type...</option>
+            {MEETING_TYPES_504.map((mt) => <option key={mt} value={mt}>{mt}</option>)}
+          </select>
+        </Card>
+        <Card>
+          <label style={{ fontSize: "13px", fontWeight: 600, fontFamily: FONT_SANS, color: P.text, display: "block", marginBottom: "10px" }}>Disability / Diagnosis *</label>
+          <p style={{ fontSize: "12px", color: P.textLight, fontFamily: FONT_SANS, margin: "0 0 10px" }}>Select all that apply. Your child does not need a formal diagnosis to qualify for a 504 plan &mdash; documented evidence of a substantially limiting condition is sufficient.</p>
+          <div style={{ display: "flex", flexWrap: "wrap" }}>
+            {DISABILITY_CATEGORIES.map((dx) => (
+              <Chip key={dx} label={dx} selected={d1.disabilities.includes(dx)} onClick={() => toggleDisability(dx)} />
+            ))}
+          </div>
+        </Card>
+        <Card>
+          <label style={{ fontSize: "13px", fontWeight: 600, fontFamily: FONT_SANS, color: P.text, display: "block", marginBottom: "10px" }}>Major Life Activities Impacted</label>
+          <p style={{ fontSize: "12px", color: P.textLight, fontFamily: FONT_SANS, margin: "0 0 10px" }}>We'll auto-detect based on disability, but select any additional activities your child struggles with.</p>
+          <div style={{ display: "flex", flexWrap: "wrap" }}>
+            {Object.entries(MAJOR_LIFE_ACTIVITIES).map(([code, label]) => (
+              <Chip key={code} label={label} selected={d1.manualActivities.includes(code)} onClick={() => toggleActivity(code)} />
+            ))}
+          </div>
+        </Card>
+        <Card>
+          <label style={{ fontSize: "13px", fontWeight: 600, fontFamily: FONT_SANS, color: P.text, display: "block", marginBottom: "6px" }}>Top Concern *</label>
+          <textarea value={d1.concern1} onChange={(e) => u1("concern1", e.target.value)} placeholder="What is your biggest concern about your child's school experience right now?" rows={3} style={{ width: "100%", padding: "10px 12px", border: "1px solid " + P.border, borderRadius: "8px", fontSize: "14px", fontFamily: FONT_SANS, resize: "vertical", boxSizing: "border-box" }} />
+        </Card>
+        <Card>
+          <label style={{ fontSize: "13px", fontWeight: 600, fontFamily: FONT_SANS, color: P.text, display: "block", marginBottom: "6px" }}>Additional Concern (optional)</label>
+          <textarea value={d1.concern2} onChange={(e) => u1("concern2", e.target.value)} placeholder="Any other concern?" rows={2} style={{ width: "100%", padding: "10px 12px", border: "1px solid " + P.border, borderRadius: "8px", fontSize: "14px", fontFamily: FONT_SANS, resize: "vertical", boxSizing: "border-box" }} />
+        </Card>
+        <Card>
+          <label style={{ fontSize: "13px", fontWeight: 600, fontFamily: FONT_SANS, color: P.accent, display: "block", marginBottom: "12px" }}>{"\u2691"} Quick Flags</label>
+          <p style={{ fontSize: "12px", color: P.textLight, fontFamily: FONT_SANS, margin: "0 0 12px" }}>Check any that apply &mdash; these help the engine detect potential 504 violations.</p>
+          {[
+            ["hasWrittenPlan", "My child has a written 504 plan", true, false],
+            ["parentInvitedToMeeting", "I was invited to the 504 meeting", true, false],
+            ["evaluationConducted", "An evaluation was conducted before the 504 plan was created", true, false],
+            ["teachersAwareOfPlan", "All of my child's teachers know about the 504 plan", true, false],
+          ].map(([field, label, yesVal, noVal]) => (
+            <div key={field} style={{ marginBottom: "12px" }}>
+              <div style={{ fontSize: "13px", fontFamily: FONT_SANS, color: P.text, marginBottom: "6px" }}>{label}</div>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button onClick={() => u1(field, yesVal)} style={{ padding: "6px 16px", borderRadius: "6px", border: "1px solid " + (d1[field] === yesVal ? P.green : P.border), background: d1[field] === yesVal ? P.greenBg : "#fff", color: d1[field] === yesVal ? P.green : P.textMid, fontSize: "12px", fontFamily: FONT_SANS, cursor: "pointer" }}>Yes</button>
+                <button onClick={() => u1(field, noVal)} style={{ padding: "6px 16px", borderRadius: "6px", border: "1px solid " + (d1[field] === noVal ? P.red : P.border), background: d1[field] === noVal ? P.redBg : "#fff", color: d1[field] === noVal ? P.red : P.textMid, fontSize: "12px", fontFamily: FONT_SANS, cursor: "pointer" }}>No</button>
+                <button onClick={() => u1(field, null)} style={{ padding: "6px 16px", borderRadius: "6px", border: "1px solid " + (d1[field] === null ? P.gold : P.border), background: d1[field] === null ? "#FFF8F0" : "#fff", color: d1[field] === null ? P.gold : P.textMid, fontSize: "12px", fontFamily: FONT_SANS, cursor: "pointer" }}>Not sure</button>
+              </div>
+            </div>
+          ))}
+          <div style={{ marginTop: "16px", borderTop: "1px solid " + P.border, paddingTop: "12px" }}>
+            <div style={{ fontSize: "12px", color: P.textLight, fontFamily: FONT_SANS, marginBottom: "8px" }}>Check any that apply:</div>
+            {[
+              ["accommodationsVerbalOnly", "Accommodations were only communicated verbally (not written)"],
+              ["lastReviewOver12Months", "504 plan hasn't been reviewed in over 12 months"],
+              ["iepDeniedNotOffered504", "Child was denied an IEP but never offered a 504 evaluation"],
+              ["disciplinedWithout504Review", "Child was suspended/disciplined without a manifestation determination"],
+              ["accommodationsNotFollowed", "Some or all accommodations are not being followed"],
+              ["onlyInformalSupports", "School is only providing informal supports, not a formal 504 plan"],
+            ].map(([field, label]) => (
+              <label key={field} style={{ display: "flex", alignItems: "flex-start", gap: "8px", marginBottom: "10px", cursor: "pointer" }}>
+                <input type="checkbox" checked={d1[field]} onChange={(e) => u1(field, e.target.checked)} style={{ marginTop: "2px" }} />
+                <span style={{ fontSize: "13px", fontFamily: FONT_SANS, color: P.text, lineHeight: 1.4 }}>{label}</span>
+              </label>
+            ))}
+          </div>
+        </Card>
+        <div style={{ display: "flex", gap: "12px" }}>
+          <button onClick={() => go(0)} style={{ flex: "0 0 auto", padding: "14px 20px", background: "#fff", border: "1px solid " + P.border, borderRadius: "10px", fontSize: "14px", fontFamily: FONT_SANS, cursor: "pointer", color: P.textMid }}>&larr; Back</button>
+          <button disabled={!can1} onClick={() => { var result = computeModule1(d1); setR1(result); go(2); }} style={{ flex: 1, padding: "14px", background: can1 ? P.accent : P.border, color: can1 ? "#fff" : P.textLight, border: "none", borderRadius: "10px", fontSize: "15px", fontWeight: 600, fontFamily: FONT, cursor: can1 ? "pointer" : "not-allowed" }}>
+            Analyze & Continue &rarr;
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ---- STEP 2: ACCOMMODATION BUILDER ----
+  if (step === 2) return (
+    <div style={{ minHeight: "100vh", background: P.bg, fontFamily: FONT }}>
+      <GlossaryPanel open={glossaryOpen} onClose={() => setGlossaryOpen(false)} />
+      <div style={{ background: P.accent, padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }} className="no-print">
+        <span style={{ color: "#fff", fontSize: "15px", fontWeight: 600 }}>504 Decision Engine</span>
+        <button onClick={() => setGlossaryOpen(true)} style={{ background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", cursor: "pointer", fontFamily: FONT_SANS }}>Glossary</button>
+      </div>
+      <div style={{ maxWidth: "600px", margin: "0 auto", padding: "24px 20px" }}>
+        <ProgressBar step={1} total={4} />
+        <StepLabel number={2} title="Accommodation Builder" time="5\u20138 min" />
+        {r1 && r1.redFlags.length > 0 && (
+          <Card style={{ borderColor: P.red }}>
+            <h3 style={{ fontSize: "14px", fontFamily: FONT_SANS, color: P.red, margin: "0 0 12px" }}>{"\u26A0"} Red Flags Detected</h3>
+            {r1.redFlags.map((rf, i) => (
+              <div key={i} style={{ marginBottom: "12px", padding: "10px", background: P.redBg, borderRadius: "6px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                  <SeverityBadge level={rf.severity} />
+                </div>
+                <div style={{ fontSize: "13px", fontFamily: FONT_SANS, color: P.text, lineHeight: 1.5 }}>{rf.text}</div>
+              </div>
+            ))}
+          </Card>
+        )}
+        {r1 && r1.rankedActivities.length > 0 && (
+          <Card>
+            <h3 style={{ fontSize: "14px", fontFamily: FONT_SANS, color: P.accent, margin: "0 0 8px" }}>Major Life Activities Impacted</h3>
+            <p style={{ fontSize: "12px", color: P.textLight, fontFamily: FONT_SANS, margin: "0 0 12px" }}>Based on your child's disability profile, these are the life activities most likely affected. This is your eligibility foundation.</p>
+            {r1.rankedActivities.slice(0, 6).map((a, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
+                <div style={{ width: "24px", height: "24px", borderRadius: "50%", background: i < 3 ? P.accent : P.goldLight, color: i < 3 ? "#fff" : P.text, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 700, fontFamily: FONT_SANS, flexShrink: 0 }}>{i + 1}</div>
+                <div style={{ fontSize: "14px", fontFamily: FONT_SANS, color: P.text }}>{a.label}</div>
+              </div>
+            ))}
+          </Card>
+        )}
+        <Card>
+          <h3 style={{ fontSize: "14px", fontFamily: FONT_SANS, color: P.accent, margin: "0 0 4px" }}>Select Accommodations *</h3>
+          <p style={{ fontSize: "12px", color: P.textLight, fontFamily: FONT_SANS, margin: "0 0 16px" }}>
+            Choose the accommodations your child currently has OR that you want to request. We'll stress-test the selection in the next step.
+            {r1 && r1.rankedAccCategories.length > 0 && (" Recommended categories for your child: " + r1.rankedAccCategories.slice(0, 3).map((c) => c.label).join(", ") + ".")}
+          </p>
+          {Object.entries(ACCOMMODATION_CATEGORIES).map(([catCode, cat]) => {
+            const isRecommended = r1 && r1.rankedAccCategories.some((c) => c.code === catCode);
+            return (
+              <div key={catCode} style={{ marginBottom: "20px" }}>
+                <div style={{ fontSize: "13px", fontWeight: 600, fontFamily: FONT_SANS, color: isRecommended ? P.accent : P.textMid, marginBottom: "8px" }}>
+                  {cat.label} {isRecommended && <span style={{ fontSize: "10px", color: P.gold }}>{"\u2605"} RECOMMENDED</span>}
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap" }}>
+                  {cat.items.map((item) => (
+                    <Chip key={item} label={item} selected={d2.selectedAccommodations.includes(item)} onClick={() => toggleAccommodation(item)} />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </Card>
+        <Card>
+          <label style={{ fontSize: "13px", fontWeight: 600, fontFamily: FONT_SANS, color: P.text, display: "block", marginBottom: "8px" }}>Implementation Questions</label>
+          {[
+            ["hasExistingPlan", "Does your child already have a 504 plan?"],
+            ["teachersNotified", "Are all teachers aware of the current accommodations?"],
+            ["implementationTracking", "Is there a system to track whether accommodations are being used?"],
+          ].map(([field, label]) => (
+            <div key={field} style={{ marginBottom: "12px" }}>
+              <div style={{ fontSize: "13px", fontFamily: FONT_SANS, color: P.text, marginBottom: "6px" }}>{label}</div>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button onClick={() => u2(field, true)} style={{ padding: "6px 16px", borderRadius: "6px", border: "1px solid " + (d2[field] === true ? P.green : P.border), background: d2[field] === true ? P.greenBg : "#fff", color: d2[field] === true ? P.green : P.textMid, fontSize: "12px", fontFamily: FONT_SANS, cursor: "pointer" }}>Yes</button>
+                <button onClick={() => u2(field, false)} style={{ padding: "6px 16px", borderRadius: "6px", border: "1px solid " + (d2[field] === false ? P.red : P.border), background: d2[field] === false ? P.redBg : "#fff", color: d2[field] === false ? P.red : P.textMid, fontSize: "12px", fontFamily: FONT_SANS, cursor: "pointer" }}>No</button>
+              </div>
+            </div>
+          ))}
+        </Card>
+        <Card>
+          <label style={{ fontSize: "13px", fontWeight: 600, fontFamily: FONT_SANS, color: P.text, display: "block", marginBottom: "6px" }}>How well are current accommodations working? (optional)</label>
+          <textarea value={d2.currentAccommodationsWorking} onChange={(e) => u2("currentAccommodationsWorking", e.target.value)} placeholder="Are the current supports helping? What's still not working?" rows={3} style={{ width: "100%", padding: "10px 12px", border: "1px solid " + P.border, borderRadius: "8px", fontSize: "14px", fontFamily: FONT_SANS, resize: "vertical", boxSizing: "border-box" }} />
+        </Card>
+        <div style={{ display: "flex", gap: "12px" }}>
+          <button onClick={() => go(1)} style={{ flex: "0 0 auto", padding: "14px 20px", background: "#fff", border: "1px solid " + P.border, borderRadius: "10px", fontSize: "14px", fontFamily: FONT_SANS, cursor: "pointer", color: P.textMid }}>&larr; Back</button>
+          <button disabled={!can2} onClick={() => { var result = computeModule2(r1, d2); setR2(result); go(3); }} style={{ flex: 1, padding: "14px", background: can2 ? P.accent : P.border, color: can2 ? "#fff" : P.textLight, border: "none", borderRadius: "10px", fontSize: "15px", fontWeight: 600, fontFamily: FONT, cursor: can2 ? "pointer" : "not-allowed" }}>
+            Stress-Test & Continue &rarr;
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ---- STEP 3: RIGHTS & STRATEGY ----
+  if (step === 3) return (
+    <div style={{ minHeight: "100vh", background: P.bg, fontFamily: FONT }}>
+      <GlossaryPanel open={glossaryOpen} onClose={() => setGlossaryOpen(false)} />
+      <div style={{ background: P.accent, padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }} className="no-print">
+        <span style={{ color: "#fff", fontSize: "15px", fontWeight: 600 }}>504 Decision Engine</span>
+        <button onClick={() => setGlossaryOpen(true)} style={{ background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", cursor: "pointer", fontFamily: FONT_SANS }}>Glossary</button>
+      </div>
+      <div style={{ maxWidth: "600px", margin: "0 auto", padding: "24px 20px" }}>
+        <ProgressBar step={2} total={4} />
+        <StepLabel number={3} title="Rights & Strategy" time="2\u20133 min" />
+        {r2 && (
+          <Card style={{ borderColor: r2.overallRisk === "High" ? P.red : r2.overallRisk === "Moderate" ? P.orange : P.green }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+              <h3 style={{ fontSize: "14px", fontFamily: FONT_SANS, color: P.text, margin: 0 }}>Accommodation Stress-Test Results</h3>
+              <SeverityBadge level={r2.overallRisk} />
+            </div>
+            {r2.gaps.length > 0 && (
+              <div style={{ marginBottom: "12px" }}>
+                <div style={{ fontSize: "12px", fontWeight: 600, fontFamily: FONT_SANS, color: P.red, marginBottom: "8px" }}>GAPS FOUND:</div>
+                {r2.gaps.map((g, i) => (
+                  <div key={i} style={{ padding: "10px", background: g.severity === "High" ? P.redBg : P.orangeBg, borderRadius: "6px", marginBottom: "8px" }}>
+                    <SeverityBadge level={g.severity} />
+                    <div style={{ fontSize: "13px", fontFamily: FONT_SANS, color: P.text, lineHeight: 1.5, marginTop: "6px" }}>{g.text}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {r2.strengths.length > 0 && (
+              <div>
+                <div style={{ fontSize: "12px", fontWeight: 600, fontFamily: FONT_SANS, color: P.green, marginBottom: "8px" }}>STRENGTHS:</div>
+                {r2.strengths.map((s, i) => (
+                  <div key={i} style={{ padding: "8px 10px", background: P.greenBg, borderRadius: "6px", marginBottom: "6px", fontSize: "13px", fontFamily: FONT_SANS, color: P.green }}>{"\u2713"} {s}</div>
+                ))}
+              </div>
+            )}
+          </Card>
+        )}
+        <Card>
+          <h3 style={{ fontSize: "14px", fontFamily: FONT_SANS, color: P.accent, margin: "0 0 4px" }}>What's in Dispute? *</h3>
+          <p style={{ fontSize: "12px", color: P.textLight, fontFamily: FONT_SANS, margin: "0 0 12px" }}>Select the issues you need to address in this meeting. The engine will generate scripts and strategy for each one.</p>
+          {DISPUTE_CATEGORIES_504.map((d) => (
+            <label key={d.id} style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "14px", cursor: "pointer", padding: "10px", borderRadius: "8px", background: d3.disputes.includes(d.id) ? P.blueBg : "transparent", border: "1px solid " + (d3.disputes.includes(d.id) ? P.blue : "transparent") }}>
+              <input type="checkbox" checked={d3.disputes.includes(d.id)} onChange={() => toggleDispute(d.id)} style={{ marginTop: "2px" }} />
+              <div>
+                <div style={{ fontSize: "13px", fontWeight: 600, fontFamily: FONT_SANS, color: P.text, marginBottom: "2px" }}>{d.label}</div>
+                <div style={{ fontSize: "12px", fontFamily: FONT_SANS, color: P.textLight, lineHeight: 1.4 }}>{d.leverage}</div>
+              </div>
+            </label>
+          ))}
+        </Card>
+        <Card>
+          <h3 style={{ fontSize: "14px", fontFamily: FONT_SANS, color: P.accent, margin: "0 0 8px" }}>Choose Your Tone</h3>
+          <p style={{ fontSize: "12px", color: P.textLight, fontFamily: FONT_SANS, margin: "0 0 12px" }}>This controls the language and posture of your scripts. Pick the one that matches your situation.</p>
+          {TONE_OPTIONS.map((t) => (
+            <button key={t.id} onClick={() => u3("tone", t.id)} style={{ display: "block", width: "100%", padding: "12px 14px", marginBottom: "8px", borderRadius: "8px", border: "1.5px solid " + (d3.tone === t.id ? P.accent : P.border), background: d3.tone === t.id ? P.accent + "0D" : "#fff", cursor: "pointer", textAlign: "left" }}>
+              <div style={{ fontSize: "13px", fontWeight: 600, fontFamily: FONT_SANS, color: d3.tone === t.id ? P.accent : P.text }}>{t.label}</div>
+              <div style={{ fontSize: "12px", fontFamily: FONT_SANS, color: P.textLight, marginTop: "2px" }}>{t.desc}</div>
+            </button>
+          ))}
+        </Card>
+        <div style={{ display: "flex", gap: "12px" }}>
+          <button onClick={() => go(2)} style={{ flex: "0 0 auto", padding: "14px 20px", background: "#fff", border: "1px solid " + P.border, borderRadius: "10px", fontSize: "14px", fontFamily: FONT_SANS, cursor: "pointer", color: P.textMid }}>&larr; Back</button>
+          <button disabled={!can3} onClick={() => { var scripts = generateScripts(d1, r1, r2, d3.disputes, d3.tone); setR3(scripts); go(4); }} style={{ flex: 1, padding: "14px", background: can3 ? P.accent : P.border, color: can3 ? "#fff" : P.textLight, border: "none", borderRadius: "10px", fontSize: "15px", fontWeight: 600, fontFamily: FONT, cursor: can3 ? "pointer" : "not-allowed" }}>
+            Generate Meeting Packet &rarr;
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ---- STEP 4: MEETING PACKET ----
+  if (step === 4) return (
+    <div style={{ minHeight: "100vh", background: P.bg, fontFamily: FONT }}>
+      <GlossaryPanel open={glossaryOpen} onClose={() => setGlossaryOpen(false)} />
+      <div style={{ background: P.accent, padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }} className="no-print">
+        <span style={{ color: "#fff", fontSize: "15px", fontWeight: 600 }}>504 Decision Engine</span>
+        <div style={{ display: "flex", gap: "8px" }}>
+          <button onClick={() => setGlossaryOpen(true)} style={{ background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", cursor: "pointer", fontFamily: FONT_SANS }}>Glossary</button>
+          <button onClick={() => window.print()} style={{ background: P.gold, border: "none", color: "#fff", padding: "6px 14px", borderRadius: "6px", fontSize: "12px", fontWeight: 600, cursor: "pointer", fontFamily: FONT_SANS }}>{"\uD83D\uDDA8"} Print Packet</button>
+        </div>
+      </div>
+      <div ref={printRef} style={{ maxWidth: "600px", margin: "0 auto", padding: "24px 20px" }}>
+        <ProgressBar step={3} total={4} />
+        <StepLabel number={4} title="Your Meeting Packet" />
+        <InfoBox type="success">
+          Your 504 meeting prep packet for <strong>{d1.childName}</strong> is ready. Review each section, then use the Print button to bring it to your meeting.
+        </InfoBox>
+        <Card>
+          <h3 style={{ fontSize: "14px", fontFamily: FONT_SANS, color: P.accent, margin: "0 0 12px" }}>Meeting Overview</h3>
+          <div style={{ fontSize: "13px", fontFamily: FONT_SANS, color: P.text, lineHeight: 1.8 }}>
+            <strong>Student:</strong> {d1.childName} {d1.age && ("(Age " + d1.age + ")")} {d1.grade && ("\u2014 " + d1.grade + " grade")}<br/>
+            <strong>Meeting Type:</strong> {d1.meetingType || "504 Plan Meeting"}<br/>
+            <strong>Disability:</strong> {d1.disabilities.join(", ")}<br/>
+            <strong>Life Activities Impacted:</strong> {r1 && r1.rankedActivities.slice(0, 4).map((a) => a.label).join(", ")}<br/>
+            <strong>Accommodation Gaps:</strong> {r2 ? r2.gaps.length : 0} identified<br/>
+            <strong>Red Flags:</strong> {r1 ? r1.redFlags.length : 0} detected<br/>
+            <strong>Disputes:</strong> {d3.disputes.length} items<br/>
+            <strong>Tone:</strong> {TONE_OPTIONS.find((t) => t.id === d3.tone)?.label || d3.tone}
+          </div>
+        </Card>
+        {r1 && r1.redFlags.length > 0 && (
+          <Card style={{ borderColor: P.red }}>
+            <h3 style={{ fontSize: "14px", fontFamily: FONT_SANS, color: P.red, margin: "0 0 12px" }}>{"\u26A0"} Red Flags to Address</h3>
+            {r1.redFlags.map((rf, i) => (
+              <div key={i} style={{ padding: "10px", background: P.redBg, borderRadius: "6px", marginBottom: "8px", fontSize: "13px", fontFamily: FONT_SANS, color: P.text, lineHeight: 1.5 }}>
+                <SeverityBadge level={rf.severity} /> <span style={{ marginLeft: "8px" }}>{rf.text}</span>
+              </div>
+            ))}
+          </Card>
+        )}
+        {r2 && r2.gaps.length > 0 && (
+          <Card>
+            <h3 style={{ fontSize: "14px", fontFamily: FONT_SANS, color: P.orange, margin: "0 0 12px" }}>Accommodation Gaps</h3>
+            {r2.gaps.map((g, i) => (
+              <div key={i} style={{ padding: "10px", background: g.severity === "High" ? P.redBg : P.orangeBg, borderRadius: "6px", marginBottom: "8px", fontSize: "13px", fontFamily: FONT_SANS, color: P.text, lineHeight: 1.5 }}>
+                <SeverityBadge level={g.severity} /> <span style={{ marginLeft: "8px" }}>{g.text}</span>
+              </div>
+            ))}
+          </Card>
+        )}
+        <Card>
+          <h3 style={{ fontSize: "14px", fontFamily: FONT_SANS, color: P.accent, margin: "0 0 12px" }}>Accommodation Checklist</h3>
+          <p style={{ fontSize: "12px", color: P.textLight, fontFamily: FONT_SANS, margin: "0 0 12px" }}>These are the accommodations you selected. Bring this list to your meeting to ensure each one is addressed.</p>
+          {d2.selectedAccommodations.map((acc, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "8px", marginBottom: "8px" }}>
+              <span style={{ fontSize: "14px", lineHeight: 1.4 }}>{"\u2610"}</span>
+              <span style={{ fontSize: "13px", fontFamily: FONT_SANS, color: P.text, lineHeight: 1.4 }}>{acc}</span>
+            </div>
+          ))}
+        </Card>
+        {r3 && r3.map((script, i) => (
+          <Card key={i}>
+            <h3 style={{ fontSize: "14px", fontFamily: FONT_SANS, color: P.accent, margin: "0 0 8px" }}>{script.label}</h3>
+            <div style={{ fontSize: "13px", fontFamily: FONT_SANS, color: P.text, lineHeight: 1.7, whiteSpace: "pre-wrap", background: P.blueBg, padding: "14px", borderRadius: "8px" }}>
+              {script.text}
+            </div>
+          </Card>
+        ))}
+        <Card>
+          <h3 style={{ fontSize: "14px", fontFamily: FONT_SANS, color: P.accent, margin: "0 0 8px" }}>Your Documented Concerns</h3>
+          <div style={{ fontSize: "13px", fontFamily: FONT_SANS, color: P.text, lineHeight: 1.7 }}>
+            <strong>Primary:</strong> {d1.concern1}<br/>
+            {d1.concern2 && <span><strong>Additional:</strong> {d1.concern2}<br/></span>}
+          </div>
+        </Card>
+        <Card>
+          <h3 style={{ fontSize: "14px", fontFamily: FONT_SANS, color: P.accent, margin: "0 0 8px" }}>Decision Log (use during the meeting)</h3>
+          <p style={{ fontSize: "12px", color: P.textLight, fontFamily: FONT_SANS, margin: "0 0 12px" }}>Write down each decision made during the meeting. Ask to have decisions read back before the meeting ends.</p>
+          {[1, 2, 3, 4, 5].map((n) => (
+            <div key={n} style={{ borderBottom: "1px solid " + P.border, padding: "12px 0", fontSize: "13px", fontFamily: FONT_SANS, color: P.textLight }}>
+              Decision {n}: _______________________________________________
+            </div>
+          ))}
+        </Card>
+        <div style={{ textAlign: "center", padding: "24px 0" }} className="no-print">
+          <button onClick={() => window.print()} style={{ padding: "14px 32px", background: P.gold, color: "#fff", border: "none", borderRadius: "10px", fontSize: "15px", fontWeight: 600, fontFamily: FONT, cursor: "pointer" }}>
+            {"\uD83D\uDDA8"} Print This Packet
+          </button>
+          <div style={{ fontSize: "12px", color: P.textLight, fontFamily: FONT_SANS, marginTop: "8px" }}>
+            Print or save as PDF before your meeting
+          </div>
+        </div>
+        <Card style={{ background: P.accent, border: "none" }}>
+          <h3 style={{ fontSize: "16px", fontFamily: FONT, color: "#fff", margin: "0 0 8px" }}>Need more support?</h3>
+          <p style={{ fontSize: "13px", fontFamily: FONT_SANS, color: "rgba(255,255,255,0.7)", margin: "0 0 12px", lineHeight: 1.5 }}>
+            Neurodivergent Uprising offers 1:1 advocacy support for parents navigating 504 plans and IEPs. If you need someone in your corner, we're here.
+          </p>
+          <a href="https://neurodivergentuprising.com" target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", padding: "10px 20px", background: P.gold, color: "#fff", borderRadius: "8px", fontSize: "13px", fontWeight: 600, fontFamily: FONT_SANS, textDecoration: "none" }}>
+            Learn More &rarr;
+          </a>
+        </Card>
+        <div style={{ marginTop: "24px", padding: "16px", textAlign: "center", fontSize: "11px", color: P.textLight, fontFamily: FONT_SANS, lineHeight: 1.5 }}>
+          &copy; 2026 Neurodivergent Uprising. This tool provides educational guidance based on Section 504 of the Rehabilitation Act. Not legal advice.
+        </div>
+      </div>
+    </div>
+  );
+
+  return null;
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+  </script>
+</body>
+</html>
